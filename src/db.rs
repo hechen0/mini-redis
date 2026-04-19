@@ -137,6 +137,21 @@ impl Db {
         Db { shared }
     }
 
+    // Del keys
+    pub(crate) fn del(&self, keys: Vec<String>) -> usize {
+        let mut state = self.shared.state.lock().unwrap();
+        let mut deleted = 0;
+        for key in keys {
+            if let Some(entry) = state.entries.remove(&key) {
+                if let Some(when) = entry.expires_at {
+                    state.expirations.remove(&(when, key));
+                }
+                deleted += 1;
+            }
+        }
+        deleted
+    }
+
     /// Get the value associated with a key.
     ///
     /// Returns `None` if there is no value associated with the key. This may be

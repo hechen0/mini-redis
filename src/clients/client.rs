@@ -2,7 +2,7 @@
 //!
 //! Provides an async connect and methods for issuing the supported commands.
 
-use crate::cmd::{Get, Ping, Publish, Set, Subscribe, Unsubscribe};
+use crate::cmd::{Del, Get, Ping, Publish, Set, Subscribe, Unsubscribe};
 use crate::{Connection, Frame};
 
 use async_stream::try_stream;
@@ -295,6 +295,27 @@ impl Client {
     pub async fn publish(&mut self, channel: &str, message: Bytes) -> crate::Result<u64> {
         // Convert the `Publish` command into a frame
         let frame = Publish::new(channel, message).into_frame();
+
+        debug!(request = ?frame);
+
+        // Write the frame to the socket
+        self.connection.write_frame(&frame).await?;
+
+        // Read the response
+        match self.read_response().await? {
+            Frame::Integer(response) => Ok(response),
+            frame => Err(frame.to_error()),
+        }
+    }
+
+    pub async fn del<K, I>(&mut self, keys: I) -> crate::Result<u64>
+    where
+        I: IntoIterator<Item = K>,
+        K: Into<String>,
+    {
+        // Convert the `Del` command into a frame
+        let keys: Vec<String> = keys.into_iter().map(Into::into).collect();
+        let frame = Del::new(keys).into_frame();
 
         debug!(request = ?frame);
 

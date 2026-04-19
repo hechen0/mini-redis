@@ -5,6 +5,66 @@ use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{self, Duration};
 
+#[tokio::test]
+async fn del_multiple_keys() {
+    let addr = start_server().await;
+    let mut stream = TcpStream::connect(addr).await.unwrap();
+
+    // set two key
+    stream
+        .write_all(b"*3\r\n$3\r\nSET\r\n$3\r\nfoo\r\n$3\r\nbar\r\n")
+        .await
+        .unwrap();
+    let mut resp = [0; 5];
+    stream.read_exact(&mut resp).await.unwrap();
+    assert_eq!(b"+OK\r\n", &resp);
+
+    stream
+        .write_all(b"*3\r\n$3\r\nSET\r\n$4\r\nfoo2\r\n$3\r\nbar\r\n")
+        .await
+        .unwrap();
+    let mut resp = [0; 5];
+    stream.read_exact(&mut resp).await.unwrap();
+    assert_eq!(b"+OK\r\n", &resp);
+
+    // Get the key, data is present
+    stream
+        .write_all(b"*2\r\n$3\r\nGET\r\n$4\r\nfoo2\r\n")
+        .await
+        .unwrap();
+
+    // Read "bar" response
+    let mut response = [0; 9];
+    stream.read_exact(&mut response).await.unwrap();
+    assert_eq!(b"$3\r\nbar\r\n", &response);
+
+    // del two key
+    stream
+        .write_all(b"*3\r\n$3\r\nDEL\r\n$3\r\nfoo\r\n$4\r\nfoo2\r\n")
+        .await
+        .unwrap();
+    let mut resp = [0; 4];
+    stream.read_exact(&mut resp).await.unwrap();
+    assert_eq!(b":2\r\n", &resp);
+
+    // get nil
+    stream
+        .write_all(b"*2\r\n$3\r\nGET\r\n$3\r\nfoo\r\n")
+        .await
+        .unwrap();
+    let mut resp = [0; 5];
+    stream.read_exact(&mut resp).await.unwrap();
+    assert_eq!(b"$-1\r\n", &resp);
+
+    stream
+        .write_all(b"*2\r\n$3\r\nGET\r\n$4\r\nfoo2\r\n")
+        .await
+        .unwrap();
+    let mut resp = [0; 5];
+    stream.read_exact(&mut resp).await.unwrap();
+    assert_eq!(b"$-1\r\n", &resp);
+}
+
 /// A basic "hello world" style test. A server instance is started in a
 /// background task. A client TCP connection is then established and raw redis
 /// commands are sent to the server. The response is evaluated at the byte

@@ -39,6 +39,24 @@ async fn key_value_get_set() {
     assert_eq!(b"world", &value[..])
 }
 
+#[tokio::test]
+async fn del_multiple_keys() {
+    let (addr, _) = start_server().await;
+
+    let mut client = Client::connect(addr).await.unwrap();
+    client.set("hello", "world".into()).await.unwrap();
+    client.set("hello2", "world".into()).await.unwrap();
+
+    let value = client.get("hello").await.unwrap().unwrap();
+    assert_eq!(b"world", &value[..]);
+
+    let value = client.get("hello2").await.unwrap().unwrap();
+    assert_eq!(b"world", &value[..]);
+
+    let value = client.del(["hello", "hello2"]).await.unwrap();
+    assert_eq!(value, 2u64)
+}
+
 /// similar to the "hello world" style test, But this time
 /// a single channel subscription will be tested instead
 #[tokio::test]
