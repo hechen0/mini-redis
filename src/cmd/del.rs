@@ -9,11 +9,7 @@ pub struct Del {
 }
 
 impl Del {
-    pub fn new<K, I>(keys: I) -> Del
-    where
-        I: IntoIterator<Item = K>,
-        K: Into<String>,
-    {
+    pub fn new(keys: Vec<String>) -> Del {
         Del { keys }
     }
 

@@ -26,10 +26,13 @@ struct Cli {
 
 #[derive(Subcommand, Debug)]
 enum Command {
+    /// Ping Pong
     Ping {
         /// Message to ping
         msg: Option<Bytes>,
     },
+    /// Del some keys
+    Del { keys: Vec<String> },
     /// Get the value of key.
     Get {
         /// Name of key to get
@@ -94,6 +97,10 @@ async fn main() -> mini_redis::Result<()> {
             } else {
                 println!("{:?}", value);
             }
+        }
+        Command::Del { keys } => {
+            let deleted = client.del(&keys).await?;
+            println!("deleted {} keys ok", deleted);
         }
         Command::Get { key } => {
             if let Some(value) = client.get(&key).await? {
