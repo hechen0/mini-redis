@@ -119,7 +119,7 @@ impl Command {
         match self {
             Command::Del(_) => "del",
             Command::Get(_) => "get",
-            Command::Publish(_) => "pub",
+            Command::Publish(_) => "publish",
             Command::Set(_) => "set",
             Command::Subscribe(_) => "subscribe",
             Command::Unsubscribe(_) => "unsubscribe",
